@@ -2,13 +2,15 @@
 
 TAB="    " # 4 Spaces
 
+DOCKER_USER="root"
+
 function _start() {
     local dev_container="dev_os_${USER}"
-    local dev_image="dev_os:0.0.1"
+    local dev_image="dev_os:0.0.2"
     local shm_size="2G"
     local dev_inside="in-dev-docker"
     local local_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-    local volumes="-v ${local_dir}:/dev"
+    local volumes="-v ${local_dir}:/dev_os"
     local local_host="$(hostname)"
     local display="${DISPLAY:-:0}"
     echo "${dev_container}"
@@ -16,10 +18,11 @@ function _start() {
         --privileged \
         --name "${dev_container}" \
         -e DISPLAY="${display}" \
-        -e USER="root" \
+        -e USER="${USER}" \
+        -e DOCKER_USER="${USER}" \
         ${volumes} \
         --net host \
-        -w /xviewer \
+        -w /dev_os \
         --add-host "${dev_inside}:127.0.0.1" \
         --add-host "${local_host}:127.0.0.1" \
         --hostname "${dev_inside}" \
@@ -33,13 +36,13 @@ function _stop() {
     local containers
     containers="$(docker ps -a --format '{{.Names}}')"
     for container in ${containers[*]}; do
-        if [[ "${container}" =~ xviewer_.*_${USER} ]]; then
-            echo "Now stop container ${container} ..."
+        if [[ "${container}" =~ dev_os_${USER} ]]; then
+            echo -e "\033[1;36mnow stop container ${container} ...\033[0m"
             if docker stop "${container}" >/dev/null; then
                 docker rm -f "${container}" 2>/dev/null
-                echo "Container ${container} stoped successfully."
+                echo -e "\033[1;32mcontainer ${container} stoped successfully.\033[0m"
             else
-                echo echo "Container ${container} stoped failed."
+                echo -e "\033[1;31mcontainer ${container} stoped failed.\033[0m"
             fi
         fi
     done
@@ -47,7 +50,7 @@ function _stop() {
 
 function _into() {
     local dev_container="dev_os_${USER}"
-    docker exec -u "root" -it "${dev_container}" /bin/bash
+    docker exec -u "${DOCKER_USER}" -it "${dev_container}" /bin/bash
 }
 
 function _print_usage() {
@@ -60,7 +63,6 @@ function _print_usage() {
 }
 
 function _parse_arguments() {
-    echo "$#"
     if [[ $# -ne 1 ]]; then
         print_usage
         exit 0
@@ -70,18 +72,18 @@ function _parse_arguments() {
         shift
         case $opt in
             start)
-                echo "Start dev docker container"
+                echo -e "\033[1;33mstart dev docker container\033[0m"
                 _stop
                 _start
                 shift
                 ;;
             stop)
-                echo "Stop and remove dev docker container"
+                echo -e "\033[1;33mstop and remove dev docker container\033[0m"
                 _stop
                 shift
                 ;;
             into)
-                echo "Step into dev docker container"
+                echo -e "\033[1;33mstep into dev docker container\033[0m"
                 _into
                 shift
                 ;;
@@ -90,7 +92,7 @@ function _parse_arguments() {
                 exit 0
                 ;;
             *)
-                echo "Unknown option: ${opt}"
+                echo -e "\033[1;31munknown option: ${opt}\033[0m"
                 _print_usage
                 exit 1
                 ;;
