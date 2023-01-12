@@ -2,7 +2,7 @@
 
 TAB="    " # 4 Spaces
 
-DOCKER_USER="root"
+DOCKER_USER=$(id -u)
 
 function _start() {
     local dev_container="dev_os_${USER}"
@@ -17,9 +17,8 @@ function _start() {
     docker run -itd \
         --privileged \
         --name "${dev_container}" \
+        --user "${DOCKER_USER}" \
         -e DISPLAY="${display}" \
-        -e USER="${USER}" \
-        -e DOCKER_USER="${USER}" \
         ${volumes} \
         --net host \
         -w /dev_os \
