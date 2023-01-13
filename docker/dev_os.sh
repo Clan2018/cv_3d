@@ -2,7 +2,8 @@
 
 TAB="    " # 4 Spaces
 
-DOCKER_USER=$(id -u)
+export USER_ID=$(id -u)
+export GID=$(id -g)
 
 function _start() {
     local dev_container="dev_os_${USER}"
@@ -17,8 +18,11 @@ function _start() {
     docker run -itd \
         --privileged \
         --name "${dev_container}" \
-        --user "${DOCKER_USER}" \
         -e DISPLAY="${display}" \
+        --user $USER_ID:$GID \
+	-v="/etc/group:/etc/group:ro" \
+	-v="/etc/passwd:/etc/passwd:ro" \
+	-v="/etc/shadow:/etc/shadow:ro" \
         ${volumes} \
         --net host \
         -w /dev_os \
@@ -49,7 +53,7 @@ function _stop() {
 
 function _into() {
     local dev_container="dev_os_${USER}"
-    docker exec -u "${DOCKER_USER}" -it "${dev_container}" /bin/bash
+    docker exec -u $USER_ID:$GID -it "${dev_container}" /bin/bash
 }
 
 function _print_usage() {
